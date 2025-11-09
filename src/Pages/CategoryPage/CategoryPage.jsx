@@ -5,14 +5,13 @@ import {
   Box, useTheme, alpha
 } from '@mui/material';
 import { Grid } from '@mui/material';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { db } from '../../Firebase/Firebase';
 import { collection, query, where, getDocs, limit, orderBy, startAfter } from 'firebase/firestore';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 
 const CategoryPage = () => {
   const theme = useTheme();
-  const navigate = useNavigate();
   const { slug } = useParams();
   const [section, setSection] = useState(null);
   const [posts, setPosts] = useState([]);
@@ -207,104 +206,104 @@ const CategoryPage = () => {
         </Box>
 
         {/* Posts Grid */}
-        <Grid container spacing={3}>
+        <Grid container spacing={4}>
           {posts.map((post, index) => (
-            <Grid 
-              key={post.id} 
-              xs={12} 
-              sm={6} 
-              md={4}
-              ref={index === posts.length - 1 ? lastPostRef : null}
-            >
-              <Card 
-                elevation={1}
-                sx={{ 
+            <Grid size={{ xs: 12, md: 6, lg: 4 }} key={post.id} ref={index === posts.length - 1 ? lastPostRef : null}>
+              <Card
+                sx={{
                   height: '100%',
                   display: 'flex',
                   flexDirection: 'column',
-                  transition: 'transform 0.2s, box-shadow 0.2s',
+                  transition: 'all 0.3s ease-in-out',
+                  borderRadius: 3,
+                  overflow: 'hidden',
                   '&:hover': {
-                    transform: 'translateY(-4px)',
-                    boxShadow: theme.shadows[4],
+                    transform: 'translateY(-12px)',
+                    boxShadow: '0 25px 50px rgba(0,0,0,0.15)',
+                    '& .card-image': {
+                      transform: 'scale(1.08)',
+                    }
                   }
                 }}
               >
-                <CardActionArea
-                  onClick={() => navigate(`/noticia/${post.id}`)}
-                  sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}
-                >
-                  {/* Card Media */}
+                <CardActionArea component={Link} to={`/noticia/${post.id}`} sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', alignItems: 'stretch' }}>
                   {post.imageUrl && !imageErrors[post.id] && (
                     <CardMedia
                       component="img"
-                      height="200"
+                      height="280"
                       image={post.imageUrl}
                       alt={post.title}
+                      className="card-image"
                       onError={() => handleImageError(post.id)}
                       sx={{
-                        objectFit: 'cover',
+                        transition: 'transform 0.3s ease-in-out',
+                        objectFit: 'cover'
                       }}
                     />
                   )}
                   {(!post.imageUrl || imageErrors[post.id]) && (
                     <Box
                       sx={{
-                        height: 200,
+                        height: 280,
                         backgroundColor: 'grey.200',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         color: 'grey.500',
-                        fontSize: '3rem'
+                        fontSize: '4rem'
                       }}
                     >
                       📰
                     </Box>
                   )}
-
-                  {/* Card Content */}
-                  <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
-                    <Typography variant="h6" component="h2" gutterBottom>
-                      {post.title}
-                    </Typography>
-                    
-                    {post.subtitle && (
-                      <Typography variant="subtitle1" color="text.secondary" gutterBottom>
-                        {post.subtitle}
-                      </Typography>
-                    )}
-
-                    <Typography 
-                      variant="body2" 
-                      color="text.secondary" 
-                      sx={{ 
-                        mb: 2,
+                </CardActionArea>
+                <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', p: 3 }}>
+                  <Typography
+                    variant="h5"
+                    component="div"
+                    sx={{
+                      fontWeight: 'bold',
+                      mb: 2,
+                      lineHeight: 1.3,
+                      display: '-webkit-box',
+                      WebkitLineClamp: 3,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden'
+                    }}
+                  >
+                    {post.title}
+                  </Typography>
+                  {post.subtitle && (
+                    <Typography
+                      variant="body1"
+                      color="text.secondary"
+                      sx={{
+                        mb: 3,
                         display: '-webkit-box',
-                        WebkitLineClamp: 3,
+                        WebkitLineClamp: 2,
                         WebkitBoxOrient: 'vertical',
                         overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        minHeight: '4.5em'  // approximately 3 lines
+                        lineHeight: 1.5
                       }}
                     >
-                      {getContentPreview(post.content)}
+                      {post.subtitle}
                     </Typography>
-
-                    {/* Footer - Date */}
-                    <Box sx={{ 
-                      mt: 'auto', 
-                      pt: 2,
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 1
-                    }}>
-                      <AccessTimeIcon fontSize="small" color="action" />
-                      <Typography variant="caption" color="text.secondary">
-                        {formatDate(post.createdAt)}
-                      </Typography>
-                    </Box>
-                  </CardContent>
-                </CardActionArea>
+                  )}
+                  <Box sx={{ mt: 'auto', pt: 2, borderTop: '1px solid', borderColor: 'divider' }}>
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        color: 'primary.main',
+                        fontWeight: 600,
+                        textTransform: 'uppercase',
+                        letterSpacing: 1,
+                        fontSize: '0.75rem'
+                      }}
+                    >
+                      {post.sectionName || post.category}
+                    </Typography>
+                  </Box>
+                </CardContent>
               </Card>
             </Grid>
           ))}
