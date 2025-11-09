@@ -1,0 +1,74 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Users collection: users store profile and role
+    match /users/{userId} {
+      allow read: if request.auth != null; // authenticated users can read profiles
+      allow create: if request.auth != null && request.auth.uid == userId; // user may create own profile
+      allow update: if request.auth != null && request.auth.uid == userId; // user may update own profile
+      allow delete: if false; // prevent deletes from client
+    }
+
+    // Posts collection: editorial workflow
+    match /posts/{postId} {
+      // Anyone can read published posts
+      allow read: if true;
+
+      // Create: only authenticated users can create posts and authorId must be their uid
+      allow create: if request.auth != null
+        && request.resource.data.authorId == request.auth.uid
+        && request.resource.data.title is string
+        && request.resource.data.content is string;
+
+      // Update: two cases
+      // 1) Reportero (author) can update own posts, but cannot set status to 'Publicado'
+      // 2) Editor (role == 'Editor') can update any post (including status -> 'Publicado' or 'Desactivado')
+      allow update: if request.auth != null && (
+        (
+          // author updating own post
+          resource.data.authorId == request.auth.uid
+          // and not trying to set status to 'Publicado'
+          && !(request.resource.data.status == 'Publicado' && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role != 'Editor')
+        )
+        ||
+        (
+          // editor can update any post
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Editor'
+        )
+      );
+
+      // Delete: only Editor can delete
+      allow delete: if request.auth != null
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Editor';
+    }
+
+    // Sections collection: only Editors can create/update/delete sections
+    match /sections/{sectionId} {
+      // public read access to list sections
+      allow read: if true;
+
+      // only authenticated users with role 'Editor' can create
+      allow create: if request.auth != null
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Editor'
+        && request.resource.data.name is string
+        && request.resource.data.slug is string;
+
+      // only Editors can update sections
+      allow update: if request.auth != null
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Editor'
+        && request.resource.data.name is string
+        && request.resource.data.slug is string;
+
+      // only Editors can delete sections
+      allow delete: if request.auth != null
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Editor';
+    }
+
+    // Fallback: deny everything else
+    match /{document=**} {
+      allow read: if false;
+      allow write: if false;
+    }
+  }
+}
